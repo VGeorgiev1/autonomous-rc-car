@@ -16,7 +16,7 @@ long duration;
 long duration2;
 int distance;
 int distance2;
-int pwm = 170;
+int pwm = 100;
 void setup() {
   pingTimer1 = millis() + pingSpeed; // Sensor 1 fires after 100ms (pingSpeed)
   pingTimer2 = pingTimer1 + (pingSpeed / 2); // Sensor 2 fires 50ms later
@@ -28,39 +28,52 @@ void setup() {
   Serial.begin(9600);
   digitalWrite(motorPin1, LOW);
   digitalWrite(motorPin2, LOW); 
+  digitalWrite(motorPin3, LOW);
+  digitalWrite(motorPin4, LOW); 
+}
+void  ping(){
+   if (millis() >= pingTimer1) {
+      pingTimer1 += pingSpeed; // Make sensor 1 fire again 100ms later (pingSpeed)
+      in1 = sonar1.ping_cm();
+   }
+   if (millis() >= pingTimer2) {
+      pingTimer2 = pingTimer1 + (pingSpeed / 2); // Make sensor 2 fire again 50ms after sensor 1 fires
+      in2 = sonar2.ping_cm();
+       // Both sensors pinged, process results here
+   }
 }
 void loop() {
- 
-  if (millis() >= pingTimer1) {
-     pingTimer1 += pingSpeed; // Make sensor 1 fire again 100ms later (pingSpeed)
-     in1 = sonar1.ping_in();
-  }
-  if (millis() >= pingTimer2) {
-     pingTimer2 = pingTimer1 + (pingSpeed / 2); // Make sensor 2 fire again 50ms after sensor 1 fires
-     in2 = sonar2.ping_in();
-     // Both sensors pinged, process results here
-  }
- Serial.print("Sensor1: ");
- Serial.print(in1);
- Serial.println();
- Serial.print("Sensor2: ");
- Serial.print(in2);
- Serial.println();
-  if((in1 < 40|| in2 < 40) && (in1 != 0 || in2 != 0)){
-    if(digitalRead(motorPin2) == HIGH){
-      analogWrite(enB, 0);
-      delay(700);
-    }else{
-      digitalWrite(motorPin2, HIGH);
-      digitalWrite(motorPin1, LOW);
-      analogWrite(enB, pwm + 70);
-      delay(350);
-      analogWrite(enB, 0);
-    }    
-  }else if(in1 == 0 || in2 == 0){
-    digitalWrite(motorPin1, HIGH);
-    digitalWrite(motorPin2, LOW);
-    analogWrite(enB, pwm);
-  }
- 
+   ping();
+   Serial.print("Sensor1: ");
+   Serial.print(in1);
+   Serial.println();
+   Serial.print("Sensor2: ");
+   Serial.print(in2);
+   Serial.println();
+   if(in1 == 0 && in2 == 0){
+      digitalWrite(motorPin1, HIGH);
+      digitalWrite(motorPin2, LOW);
+      analogWrite(enB, pwm);
+   }else if(in1 < 40 && (in2 == 0 || in2 > 40)){
+      digitalWrite(motorPin3, LOW);
+      digitalWrite(motorPin4, HIGH);
+      delay(2000);
+      digitalWrite(motorPin3, LOW);
+      digitalWrite(motorPin4, LOW);
+   }else if(in2 < 40 && (in1 == 0 || in1 > 40)){
+      digitalWrite(motorPin3, HIGH);
+      digitalWrite(motorPin4, LOW);
+      delay(2000);
+      digitalWrite(motorPin3, LOW);
+      digitalWrite(motorPin4, LOW);
+   }else if((in1 < 20 && in2 < 20) && (in1 > 0 && in2 > 0)){
+        digitalWrite(motorPin2, HIGH);
+        digitalWrite(motorPin1, LOW);
+        analogWrite(enB, pwm + 70);
+        delay(350);
+        analogWrite(enB, 0);
+        while((in1 < 20 && in2 < 20)){
+          ping();  
+        };  
+   }
 }
